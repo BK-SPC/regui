@@ -31,6 +31,23 @@ function Io:ifo(Path)
     return isfolder(Path)
 end
 
+-- https://stackoverflow.com/questions/9790688/escaping-strings-for-gsub
+
+local function esc(s)
+    return (s:gsub('%%', '%%%%')
+             :gsub('^%^', '%%^')
+             :gsub('%$$', '%%$')
+             :gsub('%(', '%%(')
+             :gsub('%)', '%%)')
+             :gsub('%.', '%%.')
+             :gsub('%[', '%%[')
+             :gsub('%]', '%%]')
+             :gsub('%*', '%%*')
+             :gsub('%+', '%%+')
+             :gsub('%-', '%%-')
+             :gsub('%?', '%%?'))
+ end
+
 function Io:l(Path)
     local listTbl = listfiles(Path)
     for i,v in pairs(listTbl) do
@@ -38,7 +55,7 @@ function Io:l(Path)
         if listTbl[i]:sub(#listTbl[i],#listTbl[i]) == "/" then
             listTbl[i] = listTbl[i]:sub(2,#listTbl[i])
         end
-        if not listTbl[i]:find(Path) then
+        if not listTbl[i]:find(esc(Path)) then
             if Path:sub(#Path,#Path) == "/" then
                 listTbl[i] = ("%s%s"):format(Path,listTbl[i])
             else
