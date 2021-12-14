@@ -1,0 +1,8 @@
+{
+    "Title" : "Custom Notifications",
+    "Desc" : "A custom notifications gui made for ReGui\nModifies the StarterGui:SetCore(\"SendNotification\") function",
+    "Creator" : "ReGUI",
+    "Thumb" : {
+        "StaticThumb" : "NotifPlugin.png"
+    }
+}

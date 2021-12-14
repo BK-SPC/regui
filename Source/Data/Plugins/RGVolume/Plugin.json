@@ -1,0 +1,8 @@
+{
+    "Title" : "Volume Controls",
+    "Desc" : "Quickly change volume with 'Left Alt +' and 'Left Alt -'",
+    "Creator" : "ReGUI",
+    "Thumb" : {
+        "StaticThumb" : "VolumePlugin.png"
+    }
+}

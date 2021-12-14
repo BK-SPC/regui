@@ -1,0 +1,30 @@
+{
+    "Lua.diagnostics.globals": [
+        "GSUB_PATH_DDS_PARENT",
+        "GSUB_PATH_PARENT",
+        "readfile",
+        "writefile",
+        "makefolder",
+        "delfolder",
+        "delfile",
+        "isfile",
+        "isfolder",
+        "listfiles",
+        "GSUB_PATH_NO_BS",
+        "getexecutorname",
+        "syn",
+        "_H",
+        "getgenv",
+        "_R",
+        "setclipboard"
+    ],
+    "Lua.diagnostics.disable": [
+        "missing-module-return",
+        "undefined-global"
+    ],
+    "Lua.diagnostics.ignore": [
+        "HttpPostAsync",
+        "HttpGetAsync",
+        "HttpGet"
+    ]
+}

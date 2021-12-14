@@ -1,0 +1,8 @@
+{
+    "Title" : "Player list",
+    "Desc" : "A custom player list gui made for ReGui\n(Unfinished)",
+    "Creator" : "ReGUI",
+    "Thumb" : {
+        "StaticThumb" : "Icon/PlayerList.png"
+    }
+}

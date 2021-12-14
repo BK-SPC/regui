@@ -1,0 +1,68 @@
+[
+    {
+        "Name" : "Io",
+        "Fallback" : "synapse-x",
+        "Wrapper" : "helper/io-v2/io.lua",
+        "Versions" : {
+            "synapse-x" : "helper/io-v2/io_syn.lua",
+            "scriptware" : "helper/io-v2/io_syn.lua"
+        }
+    },
+    {
+        "Name" : "Io_legacy",
+        "Fallback" : "synapse-x",
+        "Wrapper" : "helper/io-legacy/io.lua",
+        "Versions" : {
+            "synapse-x" : "helper/io-legacy/io_syn.lua",
+            "scriptware" : "helper/io-legacy/io_syn.lua"
+        }
+    },
+    {
+        "Name" : "Http",
+        "Fallback" : "unknown",
+        "Wrapper" : "helper/http/http.lua",
+        "Versions" : {
+            "unknown" : "helper/http/http_universal.lua"
+        }
+    },
+    {
+        "Name" : "Asset",
+        "Fallback" : "synapse-x",
+        "Wrapper" : "helper/asset/asset.lua",
+        "Versions" : {
+            "synapse-x" : "helper/asset/asset_syn.lua",
+            "scriptware" : "helper/asset/asset_sw.lua"
+        }
+    },
+    {
+        "Name" : "Path",
+        "Fallback" : "unknown",
+        "Versions" : {
+            "unknown" : "helper/path/path.lua"
+        }
+    },
+    {
+        "Name" : "_Require",
+        "Fallback" : "unknown",
+        "Versions" : {
+            "unknown" : "helper/require/require.lua"
+        }
+    },
+    {
+        "Name" : "Gui",
+        "Fallback" : "synapse-x",
+        "Versions" : {
+            "synapse-x" : "helper/gui/gui_syn.lua",
+            "scriptware" : "helper/gui/gui_sw.lua"
+        }
+    },
+    {
+        "Name" : "Clipboard",
+        "Fallback" : "synapse-x",
+        "Wrapper" : "helper/clipboard/clip.lua",
+        "Versions" : {
+            "synapse-x" : "helper/clipboard/clip_syn.lua",
+            "scriptware" : "helper/clipboard/clip_syn.lua"
+        }
+    }
+]

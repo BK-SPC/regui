@@ -1,0 +1,6 @@
+# Denote all files that are truly binary and should not be modified.
+*.data binary
+*.debug binary
+*.png binary
+*.jpg binary
+*.rbxm binary
