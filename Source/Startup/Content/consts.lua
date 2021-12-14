@@ -1,6 +1,6 @@
 local Consts = {
     -- gsub pattern for handling "../" correctly as this fails with a lot of exploits
-    GSUB_PATH_DDS_PARENT = {"%.+/",""};
+    GSUB_PATH_DDS_PARENT = {"/[^/]/%.%./","/"};
     -- gsub pattern for getting the parent directory
     GSUB_PATH_PARENT = {"%a+%..+",""};
     -- gsub pattern for removing backslashes
