@@ -339,14 +339,14 @@ function Helpers:Require(...)
     return Require:Require(...)
 end
 
-return Requirerun.lua6724local Startup,LOCAL_PATH,LAUNCH_ARGS = unpack(({...}))
+return Requirerun.lua6742local Startup,LOCAL_PATH,LAUNCH_ARGS = unpack(({...}))
 
 local Exploit = Startup:Execute("lib/getExploit.lua",LAUNCH_ARGS):Get()
 local Helpers = Startup:Execute("lib/helperLoader.lua",Exploit)
 
 local ReguiEnv = {
 	GithubUrl = "https://raw.githubusercontent.com/BK-SPC/regui/main";
-	Directory = "ReGUI_V2";
+	Directory = "ReGUI-BKSPC-V1";
     Helper = Helpers;
     Exploit = Exploit;
 	Log = function(self,...)
@@ -402,7 +402,7 @@ local ReguiEnv = {
 		return InstallingGui
 	end;
 	Update = function(self,Force)
-		--//Check for the ReGUI_V2
+		--//Check for the ReGUI-BKSPC-V1
 		local InstallingGui = self:MakeInstallGui()
 		self.Helper.Gui:Protect(InstallingGui)
 		InstallingGui.Parent = game:GetService("CoreGui")
@@ -410,7 +410,7 @@ local ReguiEnv = {
 		local UpdateNeeded = false
 		local Path = self.Helper.Path
 		if not ReGuiExists then
-			--//Create the ReGUI_V2 directory
+			--//Create the ReGUI-BKSPC-V1 directory
 			InstallingGui.MainWindow.Status.Text = ("Creating the %s directory"):format(self.Directory)
 			self.Helper.Io:MakeFolder(self.Directory)
 			--//Write LocalVersion.txt
