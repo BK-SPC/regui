@@ -6890,7 +6890,7 @@ local Panel = {
 }
 
 local UIEvents = {}
-local ReloadScript = loadstring(game:HttpGet('https://raw.githubusercontent.com/HexaRG/regui/rewrite/Source/Test/Reload.lua'),"Reload.lua")
+local ReloadScript = loadstring(game:HttpGet('https://raw.githubusercontent.com/BK-SPC/regui/main/Source/Test/Reload.lua'),"Reload.lua")
 local Icon = _H.Asset:Get(_H.Path:Join(LocalPath,"Icon.png"))
 
 function Panel:Shown()
