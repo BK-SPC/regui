@@ -273,7 +273,7 @@ function Io:l(Path)
     return listTbl
 end
 
-return IolatestVer247helper/gui/gui_sw.lua683local gui = {}
+return IolatestVer249helper/gui/gui_sw.lua683local gui = {}
 
 --https://gist.github.com/jrus/3197011
 local function uuid()
@@ -339,7 +339,7 @@ function Helpers:Require(...)
     return Require:Require(...)
 end
 
-return Requirerun.lua6742local Startup,LOCAL_PATH,LAUNCH_ARGS = unpack(({...}))
+return Requirerun.lua7008local Startup,LOCAL_PATH,LAUNCH_ARGS = unpack(({...}))
 
 local Exploit = Startup:Execute("lib/getExploit.lua",LAUNCH_ARGS):Get()
 local Helpers = Startup:Execute("lib/helperLoader.lua",Exploit)
@@ -463,6 +463,11 @@ local ReguiEnv = {
 			InstallingGui.MainWindow.Status.Text = "Creating the data directory"
 			--//Create the Data directory
 			self.Helper.Io:MakeFolder(Path:Join(self.Directory,"Data"))
+			InstallingGui.MainWindow.Status.Text = "Creating the user data directory"
+			--//Create the UserData directory
+			if not self.Helper.Io:IsFolder(Path:Join(self.Directory,"UserData")) then
+				self.Helper.Io:MakeFolder(Path:Join(self.Directory,"UserData"))
+			end
 			--//Download files
 			local CompletedInstructions = 0
 			local WaitCounter = 0
