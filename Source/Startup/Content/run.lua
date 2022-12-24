@@ -122,6 +122,11 @@ local ReguiEnv = {
 			InstallingGui.MainWindow.Status.Text = "Creating the data directory"
 			--//Create the Data directory
 			self.Helper.Io:MakeFolder(Path:Join(self.Directory,"Data"))
+			InstallingGui.MainWindow.Status.Text = "Creating the user data directory"
+			--//Create the UserData directory
+			if not self.Helper.Io:IsFolder(Path:Join(self.Directory,"UserData")) then
+				self.Helper.Io:MakeFolder(Path:Join(self.Directory,"UserData"))
+			end
 			--//Download files
 			local CompletedInstructions = 0
 			local WaitCounter = 0

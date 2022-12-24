@@ -14,6 +14,7 @@ local Lerp = _H:Require(_H.Path:Join(_ReGui.Directory,"Data","Modules"),"Lerp.lu
 
 --Constants
 local ENCRYPTED_ASSET_NAME = "00000000"
+local USER_DATA_FOLDER_NAME = "UserData"
 
 local VolPlugin
 VolPlugin = {
@@ -38,7 +39,14 @@ VolPlugin = {
             Sound = "Sine.ogg"
             _R.FeatureHandler:SetPluginSetting("RGVolume","Sound",Sound)
         end
-        self.Storage.GUI.VolumeChanged.SoundId = _H.Asset:Get(Io:GetFullPath{"Sounds",Sound})
+
+		if Sound:sub(1, #USER_DATA_FOLDER_NAME) == USER_DATA_FOLDER_NAME then
+			Sound = _H.Io:GetFullPath{_R.Directory,USER_DATA_FOLDER_NAME,Sound:sub(#USER_DATA_FOLDER_NAME + 2, #Sound)}
+		else
+			Sound = Io:GetFullPath{"Sounds",Sound}
+		end
+
+        self.Storage.GUI.VolumeChanged.SoundId = _H.Asset:Get(Sound)
         self.Storage.GUI.VolumeFrame.Speaker.Image = _H.Asset:Get(Io:GetFullPath{"Icons.png"})
         self.Storage.GUI.VolumeFrame.Speaker.Blur.Image = _H.Asset:Get(Io:GetFullPath{"BluredIcons.png"})
         self.Storage.ProductInfoCache = _R.CacheHandler:Get("ProductInfoCache")
