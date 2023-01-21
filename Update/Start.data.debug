@@ -339,7 +339,7 @@ function Helpers:Require(...)
     return Require:Require(...)
 end
 
-return Requirerun.lua7008local Startup,LOCAL_PATH,LAUNCH_ARGS = unpack(({...}))
+return Requirerun.lua6953local Startup,LOCAL_PATH,LAUNCH_ARGS = unpack(({...}))
 
 local Exploit = Startup:Execute("lib/getExploit.lua",LAUNCH_ARGS):Get()
 local Helpers = Startup:Execute("lib/helperLoader.lua",Exploit)
@@ -355,7 +355,6 @@ local ReguiEnv = {
 		end
 	end;
 	Run = function(self)
-        print(typeof(_H.Require),typeof(_H.Path.Join))
 		_H:Require(_H.Path:Join(self.Directory,"Data"),"Main.lua")
 	end;
 	MakeInstallGui = function(self)
