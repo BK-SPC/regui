@@ -14,7 +14,6 @@ local ReguiEnv = {
 		end
 	end;
 	Run = function(self)
-        print(typeof(_H.Require),typeof(_H.Path.Join))
 		_H:Require(_H.Path:Join(self.Directory,"Data"),"Main.lua")
 	end;
 	MakeInstallGui = function(self)
