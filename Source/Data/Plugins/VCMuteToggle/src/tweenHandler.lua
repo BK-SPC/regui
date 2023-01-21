@@ -18,7 +18,7 @@ local MUTE_TWEEN_IN_INFO = TweenInfo.new(
 	0.1
 )
 
-local Maid = _H:Require(_H.Path:Join(LocalPath, "lib"),"Maid.lua")
+local Maid = _H:Require(_H.Path:Join(_R.Directory,"Data","Modules"),"Maid.lua")
 
 local tweenHandler = {}
 tweenHandler.__index = tweenHandler

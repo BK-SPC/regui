@@ -8,7 +8,7 @@ local TOGGLE_KEY = Enum.KeyCode.V
 local MUTE_ICON = _H.Asset:Get(_H.Path:Join(LocalPath, "../assets", "textures", "mic_mute.png"))
 local UNMUTE_ICON = _H.Asset:Get(_H.Path:Join(LocalPath, "../assets", "textures", "mic_unmute.png"))
 
-local Maid = _H:Require(_H.Path:Join(LocalPath, "lib"),"Maid.lua")
+local Maid = _H:Require(_H.Path:Join(_R.Directory,"Data","Modules"),"Maid.lua")
 
 local uiHandler = _H:Require(_H.Path:Join(LocalPath),"uiHandler.lua")
 

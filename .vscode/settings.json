@@ -26,5 +26,9 @@
         "HttpPostAsync",
         "HttpGetAsync",
         "HttpGet"
-    ]
+	],
+	"robloxLsp.diagnostics.globals": [
+		"_R",
+		"_H"
+	]
 }

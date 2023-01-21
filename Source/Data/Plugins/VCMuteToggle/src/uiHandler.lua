@@ -6,7 +6,7 @@ local UNMUTE_ICON = _H.Asset:Get(_H.Path:Join(LocalPath, "../assets", "textures"
 local MUTE_SOUND = _H.Asset:Get(_H.Path:Join(LocalPath, "../assets", "sound", "mic_mute.ogg"))
 local UNMUTE_SOUND = _H.Asset:Get(_H.Path:Join(LocalPath, "../assets", "sound", "mic_unmute.ogg"))
 
-local Maid = _H:Require(_H.Path:Join(LocalPath, "lib"),"Maid.lua")
+local Maid = _H:Require(_H.Path:Join(_R.Directory,"Data","Modules"),"Maid.lua")
 
 local tweenHandler = _H:Require(_H.Path:Join(LocalPath), "tweenHandler.lua")
 
@@ -30,6 +30,7 @@ function uiHandler.new(muted)
 	self.muteIcon.Size = UDim2.new(0.04, 0, 0.08, 0)
 	self.muteIcon.AnchorPoint = Vector2.new(0.5, 1)
 	self.muteIcon.BackgroundTransparency = 1
+	self.muteIcon.ImageTransparency = 0.5
 	
 	if muted then
 		self.muteIcon.Image = MUTE_ICON

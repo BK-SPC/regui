@@ -1,3 +1,6 @@
+-- Modifed version of Maid to include support for Tween:Cancel()
+-- we also return useful data on :GiveTask() rather than some internal taskid as it serves no use
+
 ---	Manages the cleaning of events and other things.
 -- Useful for encapsulating state and make deconstructors easy
 -- @classmod Maid
@@ -11,10 +14,10 @@ Maid.ClassName = "Maid"
 --- Returns a new Maid object
 -- @constructor Maid.new()
 -- @treturn Maid
-function Maid.new()--: Maid
+function Maid.new()
 	return setmetatable({
 		_tasks = {}
-	}, Maid)-- :: any
+	}, Maid)
 end
 
 function Maid.isMaid(value)
@@ -73,7 +76,7 @@ end
 
 --- Same as indexing, but uses an incremented number as a key.
 -- @param task An item to clean
--- @treturn number taskId
+-- @treturn any task
 function Maid:GiveTask(task)
 	if not task then
 		error("Task cannot be false or nil", 2)
@@ -85,8 +88,6 @@ function Maid:GiveTask(task)
 	if type(task) == "table" and (not task.Destroy) then
 		warn("[Maid.GiveTask] - Gave table task without .Destroy\n\n" .. debug.traceback())
 	end
-
-	-- prevent new tasks from being added after we clean - hexa
 
 	if self._cleaned then
 		self:DoCleaning()
@@ -154,13 +155,5 @@ end
 --- Alias for DoCleaning()
 -- @function Destroy
 Maid.Destroy = Maid.DoCleaning
-
--- export type Maid = {
--- 	GiveTask: (self: Maid, task: (() -> any?) | {[any]: any} | Instance | RBXScriptConnection) -> number;
--- 	GivePromise: (self: Maid, promise: any) -> any;
--- 	Destroy: (self: Maid) -> nil;
--- 	DoCleaning: (self: Maid) -> nil;
--- 	new: () -> Maid;
--- }
 
 return Maid
