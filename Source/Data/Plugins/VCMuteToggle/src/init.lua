@@ -57,9 +57,7 @@ function VrcMute:Initialize()
 		if VoiceChatInternal.VoiceChatState == Enum.VoiceChatState.Joined then
 			self._mute = not self._mute
 			
-			VoiceChatInternal:Leave()
-			--repeat task.wait() until VoiceChatInternal.VoiceChatState ~= Enum.VoiceChatState.Ended
-			VoiceChatInternal:JoinByGroupIdToken(self._group, self._mute)
+			VoiceChatInternal:PublishPause(self._mute)
 			
 			self._muteIcon:ToggleMute()
 			if not self._mute then
