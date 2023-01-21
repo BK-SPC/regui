@@ -3,6 +3,7 @@
     "Desc" : "Dummy",
     "Creator" : "Dummy",
     "Thumb" : {
-        "StaticThumb" : "DummyThumb.png"
+        "StaticThumb" : "DummyThumb.png",
+		"AnimThumb" : "DummyHover.webm"
     }
 }
