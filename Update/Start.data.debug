@@ -1,0 +1,968 @@
+-- Constants
+
+local STARTUP_CONTENT,LAUNCH_ARGS = unpack(({...}))
+LAUNCH_ARGS = LAUNCH_ARGS or {}
+LAUNCH_ARGS.Debug = LAUNCH_ARGS.Debug or _G.RGDebug
+
+local Startup = {
+    Files = {
+
+    };
+    Log = function(self,...)
+        print(...)
+    end;
+}
+
+function Startup:Read(Path)
+    Startup:Log("Startup:Read",Path)
+    return self.Files[Path]
+end
+
+function Startup:Execute(Path,...)
+    Startup:Log("Startup:Execute",Path)
+    return loadstring(self:Read(Path),Path)(self,Path:gsub("%a+%..+",""),...)
+end
+
+function Startup:Write(Path,Content)
+    Startup:Log("Startup:Write",Path)
+    self.Files[Path] = Content
+end
+
+if not LAUNCH_ARGS.Debug then
+    Startup.Log = function() end
+else
+    Startup:Log("Debuging is enabled!")
+end
+local SEPARATOR_CHAR = string.char(1,2,3)
+local MODE_FILEPATH = 1
+local MODE_FILESIZE = 2
+local MODE_FILECONTENT = 3
+
+-- Decode the Startup stuff
+
+Startup:Log("Decoding Startup stuff")
+
+local offset = 0
+local mode = 1
+local filePath = ""
+local fileSize = ""
+local fileContent = ""
+
+Startup:Log(("Size: %sb"):format(#STARTUP_CONTENT))
+
+while offset <= #STARTUP_CONTENT do
+    if STARTUP_CONTENT:sub(offset,offset + (#SEPARATOR_CHAR - 1)) == SEPARATOR_CHAR then
+        mode = mode + 1
+        offset = offset + #SEPARATOR_CHAR
+        if mode == MODE_FILESIZE then
+            Startup:Log("GOT PATH:",filePath)
+        elseif mode == MODE_FILECONTENT then
+            Startup:Log("GOT SIZE:",fileSize)
+        end
+    else
+        local currentChar = STARTUP_CONTENT:sub(offset,offset)
+        if mode == MODE_FILEPATH then
+            filePath = filePath .. currentChar
+            offset = offset + 1
+        elseif mode == MODE_FILESIZE then
+            fileSize = fileSize .. currentChar
+            offset = offset + 1
+        elseif mode == MODE_FILECONTENT then
+            local size = tonumber(fileSize)
+            fileContent = STARTUP_CONTENT:sub(offset,offset + size - 1)
+            Startup:Write(filePath,fileContent)
+            --Startup:Log("GOT CONTENT:",string.format("%q",fileContent))
+            offset = offset + size
+            filePath = ""
+            fileSize = ""
+            fileContent = ""
+            mode = MODE_FILEPATH
+        else
+            Startup:Log("INVALID_MODE",mode)
+        end
+    end
+end
+
+Startup:Log("Decoded Startup stuff")
+
+Startup:Execute("run.lua",LAUNCH_ARGS)INIT_ENDhelper/clipboard/clip.lua130local Startup,LOCAL_PATH,Orig = unpack(({...}))
+
+local Wrapped = {}
+
+function Wrapped:Set(...)
+    Orig:s(...)
+end
+
+return Wrappedinstaller/installerBackend.lua54local Startup,LOCAL_PATH,LAUNCH_ARGS = unpack(({...}))helper/http/http_universal.lua149local http = {}
+
+function http:g(Url)
+    return game:HttpGetAsync(Url)
+end
+
+function http:p(Url)
+    return game:HttpPostAsync(Url)
+end
+
+return httphelper/asset/asset_syn.lua161local asset = {}
+
+function asset:g(Path)
+    return getsynasset(Path)
+end
+
+function asset:i(Path)
+    return game:GetObjects(getsynasset(Path))
+end
+
+return assethelper/asset/asset.lua602local Startup,LOCAL_PATH,Orig = unpack(({...}))
+
+local asset = {}
+
+function asset:Get(Path)
+	--Automatically removes "../" using string.gsub magic (that took me longer to figure how to use than it should of) as it is sometimes unsupported
+	Path = Path:gsub("/[^/^\\^%.]+/%.%./","/"):gsub("\\","/")
+    return Orig:g(Path)
+end
+
+function asset:Insert(Path)
+	--Automatically removes "../" using string.gsub magic (that took me longer to figure how to use than it should of) as it is sometimes unsupported
+	Path = Path:gsub("/[^/^\\^%.]+/%.%./","/"):gsub("\\","/")
+    return Orig:i(Path)
+end
+
+return assetlib/helperLoader.lua891local Startup,LOCAL_PATH,Exploit = unpack(({...}))
+
+Startup:Log("Loading Helpers")
+
+local HttpService = game:GetService("HttpService")
+local helpers = HttpService:JSONDecode(Startup:Read("helpers.json"))
+local LoadedHelpers = {}
+
+for i,helper in pairs(helpers) do
+    local UsedVersion = Exploit
+    local DebugName
+    if not helper.Versions[UsedVersion] then
+        UsedVersion = helper.Fallback
+        DebugName = helper.Name .. "@" .. UsedVersion .. " (Fallback)"
+    else
+        DebugName = helper.Name .. "@" .. UsedVersion
+    end
+    Startup:Log("Load Helper:",DebugName)
+    local OrigHelper = Startup:Execute(helper.Versions[UsedVersion],LoadedHelpers)
+    local Wrapper
+    if helper.Wrapper then
+        Wrapper = Startup:Execute(helper.Wrapper,OrigHelper)
+    end
+    LoadedHelpers[helper.Name] = Wrapper or OrigHelper
+end
+
+Startup:Log("Loaded Helpers")
+
+return LoadedHelpershelpers.json1786[
+    {
+        "Name" : "Io",
+        "Fallback" : "synapse-x",
+        "Wrapper" : "helper/io-v2/io.lua",
+        "Versions" : {
+            "synapse-x" : "helper/io-v2/io_syn.lua",
+            "scriptware" : "helper/io-v2/io_syn.lua"
+        }
+    },
+    {
+        "Name" : "Io_legacy",
+        "Fallback" : "synapse-x",
+        "Wrapper" : "helper/io-legacy/io.lua",
+        "Versions" : {
+            "synapse-x" : "helper/io-legacy/io_syn.lua",
+            "scriptware" : "helper/io-legacy/io_syn.lua"
+        }
+    },
+    {
+        "Name" : "Http",
+        "Fallback" : "unknown",
+        "Wrapper" : "helper/http/http.lua",
+        "Versions" : {
+            "unknown" : "helper/http/http_universal.lua"
+        }
+    },
+    {
+        "Name" : "Asset",
+        "Fallback" : "synapse-x",
+        "Wrapper" : "helper/asset/asset.lua",
+        "Versions" : {
+            "synapse-x" : "helper/asset/asset_syn.lua",
+            "scriptware" : "helper/asset/asset_sw.lua"
+        }
+    },
+    {
+        "Name" : "Path",
+        "Fallback" : "unknown",
+        "Versions" : {
+            "unknown" : "helper/path/path.lua"
+        }
+    },
+    {
+        "Name" : "_Require",
+        "Fallback" : "unknown",
+        "Versions" : {
+            "unknown" : "helper/require/require.lua"
+        }
+    },
+    {
+        "Name" : "Gui",
+        "Fallback" : "synapse-x",
+        "Versions" : {
+            "synapse-x" : "helper/gui/gui_syn.lua",
+            "scriptware" : "helper/gui/gui_sw.lua"
+        }
+    },
+    {
+        "Name" : "Clipboard",
+        "Fallback" : "synapse-x",
+        "Wrapper" : "helper/clipboard/clip.lua",
+        "Versions" : {
+            "synapse-x" : "helper/clipboard/clip_syn.lua",
+            "scriptware" : "helper/clipboard/clip_syn.lua"
+        }
+    }
+]helper/io-legacy/io_syn.lua1090local Io = {}
+
+function Io:r(Path)
+    return readfile(Path:gsub("\\","/"))
+end
+
+function Io:w(Path,Content)
+    return writefile(Path:gsub("\\","/"),Content)
+end
+
+function Io:md(Path)
+    return makefolder(Path:gsub("\\","/"))
+end
+
+function Io:dd(Path)
+    return delfolder(Path:gsub("\\","/"))
+end
+
+function Io:d(Path)
+    return delfile(Path:gsub("\\","/"))
+end
+
+function Io:ifi(Path)
+    return isfile(Path:gsub("\\","/"))
+end
+
+function Io:ifo(Path)
+    return isfolder(Path:gsub("\\","/"))
+end
+
+function Io:l(Path)
+    Path = Path:gsub("\\","/")
+    local listTbl = listfiles(Path)
+    for i,v in pairs(listTbl) do
+        listTbl[i] = v:gsub("\\","/")
+        if listTbl[i]:sub(#listTbl[i],#listTbl[i]) == "/" then
+            listTbl[i] = listTbl[i]:sub(2,#listTbl[i])
+        end
+        if not listTbl[i]:find(Path) then
+            if Path:sub(#Path,#Path) == "/" then
+                listTbl[i] = ("%s%s"):format(Path,listTbl[i])
+            else
+                listTbl[i] = ("%s/%s"):format(Path,listTbl[i])
+            end
+        end
+    end
+    return listTbl
+end
+
+return IolatestVer250helper/gui/gui_sw.lua683local gui = {}
+
+--https://gist.github.com/jrus/3197011
+local function uuid()
+    local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+    return string.gsub(template, '[xy]', function (c)
+        local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
+        return string.format('%x', v)
+    end)
+end
+
+function gui:Protect(GuiObject)
+	--lazy way to get around this but it works and i dont even think its possible to recursively check anyways as that was patched i think
+	--"then name it like 281y31987ra(&U*WDH789AWr870q3wger087adg872gead or something"
+	GuiObject.Name = uuid()
+end
+
+function gui:GetProtectedHolder()
+    return gethui()
+end
+
+gui.SW = true
+
+return guiinstaller/installerFrontend.lua599local Startup,LOCAL_PATH,LAUNCH_ARGS = unpack(({...}))
+Startup:Execute("consts.lua")()
+
+local InstallerUI = {}
+
+-- Prepare the installation UI
+function InstallerUI:Prepare()
+    local installGui = Instance.new("ScreenGui",_H.Gui:GetProtectedHolder())
+    installGui.Name = "Regui"
+    local mainContentFrame = Instance.new("Frame",installGui)
+    mainContentFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    mainContentFrame.SizeConstraint = Enum.SizeConstraint.RelativeXY
+    mainContentFrame.Size = UDim2.fromScale(0.4, 0.4)
+    mainContentFrame.BackgroundColor3 = Color3.new()
+end
+
+return InstallerUIhelper/path/path.lua165local path = {}
+
+function path:Join(...)
+	local Vars = {...}
+	local Path = table.concat(Vars,"/"):gsub("/%a+/%.%./","/"):gsub("\\","/")
+	return Path
+end
+
+return pathhelper/require/require.lua463local Startup,LOCAL_PATH,Helpers = unpack(({...}))
+
+local Require = {}
+
+function Require:Require(ModulePath,ModuleName)
+	local Path = Helpers.Path:Join(ModulePath,ModuleName)
+	local Content = Helpers.Io:Read(Path)
+	local LoadedString,Err = loadstring(Content,Path)
+	if not LoadedString then
+		Startup:Log(Path,"failed to load",Err)
+	else
+		return LoadedString(ModulePath)
+	end
+end
+
+function Helpers:Require(...)
+    return Require:Require(...)
+end
+
+return Requirerun.lua7008local Startup,LOCAL_PATH,LAUNCH_ARGS = unpack(({...}))
+
+local Exploit = Startup:Execute("lib/getExploit.lua",LAUNCH_ARGS):Get()
+local Helpers = Startup:Execute("lib/helperLoader.lua",Exploit)
+
+local ReguiEnv = {
+	GithubUrl = "https://raw.githubusercontent.com/BK-SPC/regui/main";
+	Directory = "ReGUI-BKSPC-V1";
+    Helper = Helpers;
+    Exploit = Exploit;
+	Log = function(self,...)
+		if _G.RGDebug then
+			print(...)
+		end
+	end;
+	Run = function(self)
+        print(typeof(_H.Require),typeof(_H.Path.Join))
+		_H:Require(_H.Path:Join(self.Directory,"Data"),"Main.lua")
+	end;
+	MakeInstallGui = function(self)
+		local function uuid()
+			local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+			return string.gsub(template, '[xy]', function (c)
+				local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
+				return string.format('%x', v)
+			end)
+		end
+		local InstallingGui = Instance.new("ScreenGui")
+		InstallingGui.Name = uuid()
+		InstallingGui.IgnoreGuiInset = true
+		local MainWindow = Instance.new("Frame",InstallingGui)
+		MainWindow.Name = "MainWindow"
+		MainWindow.BackgroundColor3 = Color3.fromRGB(70, 75, 86)
+		MainWindow.AnchorPoint = Vector2.new(0.5, 0.5)
+		MainWindow.Position = UDim2.new(0.5, 0, 0.5, 0)
+		MainWindow.Size = UDim2.new(0.7, 0, 0.4, 0)
+		MainWindow.SizeConstraint = Enum.SizeConstraint.RelativeYY
+		local UICorner = Instance.new("UICorner",MainWindow)
+		UICorner.CornerRadius = UDim.new(0.05, 0)
+		local TopBar = Instance.new("Frame",MainWindow)
+		TopBar.Name = "TopBar"
+		TopBar.BackgroundColor3 = Color3.fromRGB(58.5, 63, 72)
+		TopBar.Size = UDim2.new(1, 0, 0.05, 0)
+		TopBar.BorderSizePixel = 0
+		local Title = Instance.new("TextLabel",TopBar)
+		Title.Name = "Title"
+		Title.Text = "ReGui Installer"
+		Title.BackgroundTransparency = 1
+		Title.Size = UDim2.new(1, 0, 1, 0)
+		Title.TextScaled = true
+		Title.TextColor3 = Color3.new(1, 1, 1)
+		local Status = Instance.new("TextLabel",MainWindow)
+		Status.Name = "Status"
+		Status.Text = ""
+		Status.TextScaled = true
+		Status.BackgroundTransparency = 1
+		Status.AnchorPoint = Vector2.new(0.5, 0.5)
+		Status.Position = UDim2.new(0.5, 0, 0.5, 0)
+		Status.Size = UDim2.new(1, 0, 0.05, 0)
+		Status.TextColor3 = Color3.new(1, 1, 1)
+		return InstallingGui
+	end;
+	Update = function(self,Force)
+		--//Check for the ReGUI-BKSPC-V1
+		local InstallingGui = self:MakeInstallGui()
+		self.Helper.Gui:Protect(InstallingGui)
+		InstallingGui.Parent = game:GetService("CoreGui")
+		local ReGuiExists = self.Helper.Io:IsFolder(self.Directory)
+		local UpdateNeeded = false
+		local Path = self.Helper.Path
+		if not ReGuiExists then
+			--//Create the ReGUI-BKSPC-V1 directory
+			InstallingGui.MainWindow.Status.Text = ("Creating the %s directory"):format(self.Directory)
+			self.Helper.Io:MakeFolder(self.Directory)
+			--//Write LocalVersion.txt
+			InstallingGui.MainWindow.Status.Text = "Writing LocalVersion.txt"
+			self.Helper.Io:Write(
+				Path:Join(self.Directory,"LocalVersion.txt"),
+				Startup:Read("latestVer")
+			)
+			--//Create the ThirdPartyPlugins directory
+			InstallingGui.MainWindow.Status.Text = "Creating the ThirdPartyPlugins directory"
+			self.Helper.Io:MakeFolder(Path:Join(self.Directory,"ThirdPartyPlugins"))
+		end
+		InstallingGui.MainWindow.Status.Text = "Reading LocalVersion.txt"
+		local LocalVersion = self.Helper.Io:Read(
+			Path:Join(self.Directory,"LocalVersion.txt")
+		)
+		InstallingGui.MainWindow.Status.Text = "Fetching LatestVersion.txt"
+		local LatestVersion = Startup:Read("latestVer")
+		self:Log(LocalVersion,LatestVersion)
+		UpdateNeeded = (LocalVersion ~= LatestVersion) or (not ReGuiExists) or Force
+		if UpdateNeeded then
+			local InstallDataUrl = Path:Join(self.GithubUrl,"Update","Install.data")
+			local InstallInstructionsUrl = Path:Join(self.GithubUrl,"Update","Install.json")
+			if _G.RGDebug then
+				InstallDataUrl = InstallDataUrl .. ".debug"
+				InstallInstructionsUrl = InstallInstructionsUrl .. ".debug"
+			end
+			--//Update LocalVersion.txt
+			InstallingGui.MainWindow.Status.Text = "Writing LocalVersion.txt"
+			self.Helper.Io:Write(
+				Path:Join(self.Directory,"LocalVersion.txt"),
+				LatestVersion
+			)
+			--//Get install instructions
+			InstallingGui.MainWindow.Status.Text = "Fetching Install.json"
+			local InstallInstructions = self.Helper.Http:Get(
+				InstallInstructionsUrl,
+				true
+			)
+			InstallingGui.MainWindow.Status.Text = "Fetching Install.data"
+			local InstallData = self.Helper.Http:Get(
+				InstallDataUrl
+			)
+			local DataOffset = 1
+			if self.Helper.Io:IsFolder(Path:Join(self.Directory,"Data")) then
+				--//Remove old Data folder
+				InstallingGui.MainWindow.Status.Text = "Removing old data directory"
+				self.Helper.Io:DeleteFolder(Path:Join(self.Directory,"Data"))
+			end
+			InstallingGui.MainWindow.Status.Text = "Creating the data directory"
+			--//Create the Data directory
+			self.Helper.Io:MakeFolder(Path:Join(self.Directory,"Data"))
+			InstallingGui.MainWindow.Status.Text = "Creating the user data directory"
+			--//Create the UserData directory
+			if not self.Helper.Io:IsFolder(Path:Join(self.Directory,"UserData")) then
+				self.Helper.Io:MakeFolder(Path:Join(self.Directory,"UserData"))
+			end
+			--//Download files
+			local CompletedInstructions = 0
+			local WaitCounter = 0
+			for InstructionId,IOInstruction in pairs(InstallInstructions) do
+				--[[
+				IOInstruction : Table
+					1 : Type (Number)
+						1: File
+						2: Folder
+					2 : Path (String)
+					3: DataLength (Number)
+				]]
+				if IOInstruction[1] == 1 then
+					WaitCounter = WaitCounter + 1
+					InstallingGui.MainWindow.Status.Text = "Write " .. IOInstruction[2]
+					self.Helper.Io:Write(
+						Path:Join(self.Directory,"Data",IOInstruction[2]),
+						string.sub(
+							InstallData,
+							DataOffset,
+							DataOffset + (IOInstruction[3])
+						)
+					)
+					DataOffset = DataOffset + (IOInstruction[3] + 1)
+					CompletedInstructions = CompletedInstructions + 1
+				elseif IOInstruction[1] == 2 then
+					WaitCounter = WaitCounter + 1
+					InstallingGui.MainWindow.Status.Text = "Create " .. IOInstruction[2]
+					self.Helper.Io:MakeFolder(
+						Path:Join(self.Directory,"Data",IOInstruction[2])
+					)
+					CompletedInstructions = CompletedInstructions + 1
+				end
+				if WaitCounter >= 10 then
+					game:GetService("RunService").RenderStepped:Wait()
+					WaitCounter = 0
+				end
+			end
+			repeat game:GetService("RunService").RenderStepped:Wait() until CompletedInstructions == #InstallInstructions
+		end
+		InstallingGui:Destroy()
+	end;
+    Startup = Startup;
+}
+
+
+Startup:Log("Creating env")
+xpcall(function()
+    getgenv()._ReGui = ReguiEnv
+    getgenv()._R = ReguiEnv
+    getgenv()._H = Helpers
+    Startup:Log("Created env")
+end,function(err)
+    warn("ReGui failed to create env")
+    error(err)
+end)
+if not _R then
+    Startup:Log("env failed to create with no errors????????")
+end
+
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+if not LAUNCH_ARGS.DontRun then
+	if not LAUNCH_ARGS.DontUpdate then
+		_R:Update(LAUNCH_ARGS.ForceUpdate)
+	end
+	_R:Run()
+endhelper/gui/gui_syn.lua298local gui = {}
+
+function gui:Protect(GuiObject)
+	return syn.protect_gui(GuiObject)
+end
+
+local protectedHolder = Instance.new("Folder")
+syn.protect_gui(protectedHolder)
+protectedHolder.Parent = game:FindService("CoreGui")
+
+function gui:GetProtectedHolder()
+    return protectedHolder
+end
+
+return guihelper/http/http.lua572local Startup,LOCAL_PATH,Orig = unpack(({...}))
+
+local HttpService = game:GetService("HttpService")
+local Wrapped = {}
+
+function Wrapped:Get(Url,AutoDecode)
+    Startup:Log("GET:/" .. Url)
+    local Response = Orig:g(Url)
+	if AutoDecode then
+		Response = self:JSONDecode(Response)
+	end
+    return Response
+end
+
+function Wrapped:Post(Url,Body)
+    Startup:Log("POST:/" .. Url)
+    return Orig:p(Url)
+end
+
+function Wrapped:JSONDecode(...)
+    return HttpService:JSONDecode(...)
+end
+
+function Wrapped:JSONEncode(...)
+    return HttpService:JSONEncode(...)
+end
+
+return Wrappedhelper/clipboard/clip_syn.lua91local clipboard = {}
+
+function clipboard:s(...)
+    setclipboard(...)
+end
+
+return clipboardhelper/io-v2/io_syn.lua1540local Startup,LOCAL_PATH = unpack(({...}))
+Startup:Execute("consts.lua")()
+
+local Io = {}
+
+function Io:r(Path)
+    return readfile(Path)
+end
+
+function Io:w(Path,Content)
+    return writefile(Path,Content)
+end
+
+function Io:md(Path)
+    return makefolder(Path)
+end
+
+function Io:dd(Path)
+    return delfolder(Path)
+end
+
+function Io:d(Path)
+    return delfile(Path)
+end
+
+function Io:ifi(Path)
+    return isfile(Path)
+end
+
+function Io:ifo(Path)
+    return isfolder(Path)
+end
+
+-- https://stackoverflow.com/questions/9790688/escaping-strings-for-gsub
+
+local function esc(s)
+    return (s:gsub('%%', '%%%%')
+             :gsub('^%^', '%%^')
+             :gsub('%$$', '%%$')
+             :gsub('%(', '%%(')
+             :gsub('%)', '%%)')
+             :gsub('%.', '%%.')
+             :gsub('%[', '%%[')
+             :gsub('%]', '%%]')
+             :gsub('%*', '%%*')
+             :gsub('%+', '%%+')
+             :gsub('%-', '%%-')
+             :gsub('%?', '%%?'))
+ end
+
+function Io:l(Path)
+    local listTbl = listfiles(Path)
+    for i,v in pairs(listTbl) do
+        listTbl[i] = v:gsub(unpack(GSUB_PATH_NO_BS))
+        if listTbl[i]:sub(#listTbl[i],#listTbl[i]) == "/" then
+            listTbl[i] = listTbl[i]:sub(2,#listTbl[i])
+        end
+        if not listTbl[i]:find(esc(Path)) then
+            if Path:sub(#Path,#Path) == "/" then
+                listTbl[i] = ("%s%s"):format(Path,listTbl[i])
+            else
+                listTbl[i] = ("%s/%s"):format(Path,listTbl[i])
+            end
+        end
+    end
+    return listTbl
+end
+
+return Iohelper/asset/asset_sw.lua167local asset = {}
+
+function asset:g(Path)
+    return getcustomasset(Path)
+end
+
+function asset:i(Path)
+    return game:GetObjects(getcustomasset(Path))
+end
+
+return assethelper/io-legacy/io.lua2620local Startup,LOCAL_PATH,Orig = unpack(({...}))
+
+local Wrapped = {
+    Cache = {
+        Content = {};
+        List = {};
+        Exists = {
+            File = {},
+            Folder = {}
+        };
+    };
+}
+
+function Wrapped:Read(Path)
+    Startup:Log("Read",Path)
+    if not self.Cache.Content[Path] then
+        self.Cache.Content[Path] = Orig:r(Path)
+    end
+    return self.Cache.Content[Path]
+end
+
+function Wrapped:Write(Path,Content)
+    Startup:Log("Write",Path)
+    self.Cache.Content[Path] = Content
+    local ParentDir = Path:gsub("%a+%..+","")
+    if self.Cache.List[ParentDir] then
+        local Filename = Path:gsub(".+/","")
+        table.insert(self.Cache.List[ParentDir],Filename)
+    end
+    return Orig:w(Path,Content)
+end
+
+function Wrapped:MakeFolder(Path)
+    Startup:Log("MakeFolder",Path)
+    local ParentDir = Path:gsub("%a+%..+","")
+    if self.Cache.List[ParentDir] then
+        local Filename = Path:gsub(".+/","")
+        table.insert(self.Cache.List[ParentDir],Filename)
+    end
+    return Orig:md(Path)
+end
+
+function Wrapped:DeleteFolder(Path)
+    Startup:Log("DeleteFolder",Path)
+    self.Cache.Exists.Folder[Path] = nil
+    local ParentDir = Path:gsub("%a+%..+","")
+    if self.Cache.List[ParentDir] then
+        local Filename = Path:gsub(".+/","")
+        for i,v in pairs(self.Cache.List[ParentDir]) do
+            if v == Filename then
+                table.remove(self.Cache.List[ParentDir],i)
+            end
+        end
+    end
+    return Orig:dd(Path)
+end
+
+function Wrapped:Delete(Path)
+    Startup:Log("Delete",Path)
+    self.Cache.Exists.File[Path] = nil
+    local ParentDir = Path:gsub("%a+%..+","")
+    if self.Cache.List[ParentDir] then
+        local Filename = Path:gsub(".+/","")
+        for i,v in pairs(self.Cache.List[ParentDir]) do
+            if v == Filename then
+                table.remove(self.Cache.List[ParentDir],i)
+            end
+        end
+    end
+    return Orig:d(Path)
+end
+
+function Wrapped:IsFile(Path)
+    Startup:Log("IsFile",Path)
+    if not self.Cache.Exists.File[Path] then
+        self.Cache.Exists.File[Path] = Orig:ifi(Path)
+    end
+    return self.Cache.Exists.File[Path]
+end
+
+function Wrapped:IsFolder(Path)
+    Startup:Log("IsFolder",Path)
+    if not self.Cache.Exists.Folder[Path] then
+        self.Cache.Exists.Folder[Path] = Orig:ifo(Path)
+    end
+    return self.Cache.Exists.Folder[Path]
+end
+
+function Wrapped:ListFiles(Path)
+    Startup:Log("ListFiles",Path)
+    if not self.Cache.List[Path] then
+        self.Cache.List[Path] = Orig:l(Path)
+    end
+    return self.Cache.List[Path]
+end
+
+Startup:Log("IO-LEGACY LOADED")
+
+return Wrappedhelper/rg-theming/theme.lua203local Startup,LOCAL_PATH,Helpers = unpack(({...}))
+Startup:Execute("consts.lua")()
+
+local PaletteManager = {}
+
+function PaletteManager:GetTheme()
+    return GUI_DEFAULT_PALETTE
+end
+
+return PaletteManagerconsts.lua800local Consts = {
+    -- gsub pattern for handling "../" correctly as this fails with a lot of exploits
+    GSUB_PATH_DDS_PARENT = {"/[^/]+/%.%./","/"};
+    -- gsub pattern for getting the parent directory
+    GSUB_PATH_PARENT = {"%a+%..+",""};
+    -- gsub pattern for removing backslashes
+    GSUB_PATH_NO_BS = {"\\","/"};
+    -- default ui colors for regui
+    GUI_DEFAULT_THEME = {
+        MAIN_COLOR = Color3.fromRGB(93, 104, 133);
+        MAIN_COLOR2 = Color3.fromRGB(105, 117, 149);
+        BUTTON_COLOR = Color3.fromRGB(130, 143, 191);
+    };
+}
+
+return function(DontModEnv)
+
+    if not DontModEnv then
+        --Modify the environment to define the consts
+        for i,v in pairs(Consts) do
+            getfenv()[i] = v
+        end
+    end
+
+    --Return the consts table
+    return Consts
+
+endlib/getExploit.lua613local Startup,LOCAL_PATH,LAUNCH_ARGS = unpack(({...}))
+
+local function GetExploit(self)
+    local DetectedExploit = "unknown"
+
+    if LAUNCH_ARGS.ForceExploitType then
+        Startup:Log("Forced Exploit:",LAUNCH_ARGS.ForceExploitType)
+    else
+        if syn then
+            DetectedExploit = "synapse-x"
+        end
+        if getexecutorname then
+            if getexecutorname() == "ScriptWare" then
+                DetectedExploit = "scriptware"
+            end
+        end
+        Startup:Log("Detected Exploit:",DetectedExploit)
+    end
+    
+    return DetectedExploit
+end
+
+return {
+    Get = GetExploit
+}helper/io-v2/io.lua4107local Startup,LOCAL_PATH,Orig = unpack(({...}))
+Startup:Execute("consts.lua")()
+
+local Io = {}
+Io.__index = Io
+Io.Cache = {
+    Content = {};
+    List = {};
+    Exists = {
+        File = {},
+        Folder = {}
+    };
+};
+Io.BaseDir = ""
+
+local function HandlePath(Input)
+    Startup:Log("Handle Path",Input)
+    if typeof(Input) == "table" then
+        local Path = ""
+        for i,v in pairs(Input) do
+            if i == 1 then
+                Path = v
+            else
+                Path = Path .. "/" .. v
+            end
+        end
+        return Path:gsub(unpack(GSUB_PATH_NO_BS)):gsub(unpack(GSUB_PATH_DDS_PARENT))
+    elseif typeof(Input) == "string" then
+        return Input:gsub(unpack(GSUB_PATH_NO_BS)):gsub(unpack(GSUB_PATH_DDS_PARENT))
+    else
+        error("Invalid path given, must be a string or a table")
+    end
+end
+
+function Io.new(BaseDirectory)
+    BaseDirectory = HandlePath(BaseDirectory)
+    if BaseDirectory:sub(#BaseDirectory,#BaseDirectory) ~= "/" then
+        BaseDirectory = BaseDirectory .. "/"
+    end
+    local self = {}
+    setmetatable(self, Io)
+
+    self.BaseDir = BaseDirectory or ""
+
+    return self
+end
+
+function Io:GetFullPath(Path)
+    Startup:Log("Get Full Path",Path)
+    return self.BaseDir .. HandlePath(Path)
+end
+
+function Io:Read(Path)
+    Path = self.BaseDir .. HandlePath(Path)
+    Startup:Log("Read",Path)
+    if not self.Cache.Content[Path] then
+        self.Cache.Content[Path] = Orig:r(Path)
+    end
+    return self.Cache.Content[Path]
+end
+
+function Io:Write(Path,Content)
+    Path = self.BaseDir .. HandlePath(Path)
+    Startup:Log("Write",Path)
+    self.Cache.Content[Path] = Content
+    local ParentDir = Path:gsub(unpack(GSUB_PATH_PARENT))
+    if self.Cache.List[ParentDir] then
+        local Filename = Path:gsub(unpack(GSUB_PATH_DDS_PARENT))
+        table.insert(self.Cache.List[ParentDir],Filename)
+    end
+    return Orig:w(Path,Content)
+end
+
+function Io:MakeFolder(Path)
+    Path = self.BaseDir .. HandlePath(Path)
+    Startup:Log("MakeFolder",Path)
+    local ParentDir = Path:gsub(unpack(GSUB_PATH_PARENT))
+    if self.Cache.List[ParentDir] then
+        local Filename = Path:gsub(unpack(GSUB_PATH_DDS_PARENT))
+        table.insert(self.Cache.List[ParentDir],Filename)
+    end
+    return Orig:md(Path)
+end
+
+function Io:DeleteFolder(Path)
+    Path = self.BaseDir .. HandlePath(Path)
+    Startup:Log("DeleteFolder",Path)
+    self.Cache.Exists.Folder[Path] = nil
+    local ParentDir = Path:gsub(unpack(GSUB_PATH_PARENT))
+    if self.Cache.List[ParentDir] then
+        local Filename = Path:gsub(unpack(GSUB_PATH_DDS_PARENT))
+        for i,v in pairs(self.Cache.List[ParentDir]) do
+            if v == Filename then
+                table.remove(self.Cache.List[ParentDir],i)
+            end
+        end
+    end
+    return Orig:dd(Path)
+end
+
+function Io:Delete(Path)
+    Path = self.BaseDir .. HandlePath(Path)
+    Startup:Log("Delete",Path)
+    self.Cache.Exists.File[Path] = nil
+    local ParentDir = Path:gsub(unpack(GSUB_PATH_PARENT))
+    if self.Cache.List[ParentDir] then
+        local Filename = Path:gsub(unpack(GSUB_PATH_DDS_PARENT))
+        for i,v in pairs(self.Cache.List[ParentDir]) do
+            if v == Filename then
+                table.remove(self.Cache.List[ParentDir],i)
+            end
+        end
+    end
+    return Orig:d(Path)
+end
+
+function Io:IsFile(Path)
+    Path = self.BaseDir .. HandlePath(Path)
+    Startup:Log("IsFile",Path)
+    if not self.Cache.Exists.File[Path] then
+        self.Cache.Exists.File[Path] = Orig:ifi(Path)
+    end
+    return self.Cache.Exists.File[Path]
+end
+
+function Io:IsFolder(Path)
+    Path = self.BaseDir .. HandlePath(Path)
+    Startup:Log("IsFolder",Path)
+    if not self.Cache.Exists.Folder[Path] then
+        self.Cache.Exists.Folder[Path] = Orig:ifo(Path)
+    end
+    return self.Cache.Exists.Folder[Path]
+end
+
+function Io:ListFiles(Path)
+    Path = self.BaseDir .. HandlePath(Path)
+    Startup:Log("ListFiles",Path)
+    if not self.Cache.List[Path] then
+        self.Cache.List[Path] = Orig:l(Path)
+    end
+    return self.Cache.List[Path]
+end
+
+Startup:Log("IO-V2 LOADED")
+
+return Io
