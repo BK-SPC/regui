@@ -1,0 +1,9 @@
+{
+    "Title" : "VRC-Like Mute Toggle",
+    "Desc" : "Toggle VC mute by pressing V just like VRC",
+    "Creator" : "Blueberry#6886 & ported by BK-SPC",
+    "Thumb" : {
+        "StaticThumb" : "assets/plugin/thumb.png",
+		"AnimThumb" : "assets/plugin/hover.webm"
+    }
+}
