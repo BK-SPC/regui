@@ -4245,7 +4245,165 @@ Their original licenses shall be comply when used.
 4. WeakAuras2,
 	https://github.com/WeakAuras/WeakAuras2
 	Licensed under GPLv2.
-	For the 6bit encoding and decoding.local ObjectPool = {
+	For the 6bit encoding and decoding.-- Modifed version of Maid to include support for Tween:Cancel()
+-- we also return useful data on :GiveTask() rather than some internal taskid as it serves no use
+
+---	Manages the cleaning of events and other things.
+-- Useful for encapsulating state and make deconstructors easy
+-- @classmod Maid
+-- @see Signal
+
+local FN_NONE = function() end
+
+local Maid = {}
+Maid.ClassName = "Maid"
+
+--- Returns a new Maid object
+-- @constructor Maid.new()
+-- @treturn Maid
+function Maid.new()
+	return setmetatable({
+		_tasks = {}
+	}, Maid)
+end
+
+function Maid.isMaid(value)
+	return type(value) == "table" and value.ClassName == "Maid"
+end
+
+--- Returns Maid[key] if not part of Maid metatable
+-- @return Maid[key] value
+function Maid:__index(index)
+	if Maid[index] then
+		return Maid[index]
+	else
+		return self._tasks[index]
+	end
+end
+
+--- Add a task to clean up. Tasks given to a maid will be cleaned when
+--  maid[index] is set to a different value.
+-- @usage
+-- Maid[key] = (function)         Adds a task to perform
+-- Maid[key] = (event connection) Manages an event connection
+-- Maid[key] = (Maid)             Maids can act as an event connection, allowing a Maid to have other maids to clean up.
+-- Maid[key] = (Object)           Maids can cleanup objects with a `Destroy` method
+-- Maid[key] = nil                Removes a named task. If the task is an event, it is disconnected. If it is an object,
+--                                it is destroyed.
+function Maid:__newindex(index, newTask)
+	if Maid[index] ~= nil then
+		error(("'%s' is reserved"):format(tostring(index)), 2)
+	end
+
+	local tasks = self._tasks
+	local oldTask = tasks[index]
+
+	if oldTask == newTask then
+		return
+	end
+
+	tasks[index] = newTask
+
+	if oldTask then
+		if type(oldTask) == "function" then
+			oldTask()
+		elseif typeof(oldTask) == "RBXScriptConnection" then
+			oldTask:Disconnect()
+		elseif oldTask.Destroy then
+			xpcall(function()
+				if oldTask.Cancel then
+					oldTask:Cancel()
+				end
+			end, FN_NONE)
+
+			oldTask:Destroy()
+		end
+	end
+end
+
+--- Same as indexing, but uses an incremented number as a key.
+-- @param task An item to clean
+-- @treturn any task
+function Maid:GiveTask(task)
+	if not task then
+		error("Task cannot be false or nil", 2)
+	end
+
+	local taskId = #self._tasks+1
+	self[taskId] = task
+
+	if type(task) == "table" and (not task.Destroy) then
+		warn("[Maid.GiveTask] - Gave table task without .Destroy\n\n" .. debug.traceback())
+	end
+
+	if self._cleaned then
+		self:DoCleaning()
+	end
+
+	return task
+end
+
+function Maid:GivePromise(promise)
+	if not promise:IsPending() then
+		return promise
+	end
+
+	local newPromise = promise.resolved(promise)
+	local id = self:GiveTask(newPromise)
+
+	-- Ensure GC
+	newPromise:Finally(function()
+		self[id] = nil
+	end)
+
+	return newPromise
+end
+
+--- Cleans up all tasks.
+-- @alias Destroy
+function Maid:DoCleaning()
+	self._cleaned = true
+	
+	local tasks = self._tasks
+
+	-- Disconnect all events first as we know this is safe
+	for index, task in pairs(tasks) do
+		if typeof(task) == "RBXScriptConnection" then
+			tasks[index] = nil
+			task:Disconnect()
+		end
+	end
+
+	-- Clear out tasks table completely, even if clean up tasks add more tasks to the maid
+	local index, task = next(tasks)
+	while task ~= nil do
+		tasks[index] = nil
+		xpcall(function()
+			if type(task) == "function" then
+				task()
+			elseif typeof(task) == "RBXScriptConnection" then
+				task:Disconnect()
+			elseif task.Destroy then
+				xpcall(function()
+					if task.Cancel then
+						task:Cancel()
+					end
+				end, FN_NONE)
+				
+				task:Destroy()
+			end
+		end, function()
+			
+		end)
+		index, task = next(tasks)
+	end
+end
+
+--- Alias for DoCleaning()
+-- @function Destroy
+Maid.Destroy = Maid.DoCleaning
+
+return Maidlocal ObjectPool = {
     New = function(self,BaseObject)
         local Pool = {
             Contents = {}
@@ -6931,7 +7089,7 @@ local TOGGLE_KEY = Enum.KeyCode.V
 local MUTE_ICON = _H.Asset:Get(_H.Path:Join(LocalPath, "../assets", "textures", "mic_mute.png"))
 local UNMUTE_ICON = _H.Asset:Get(_H.Path:Join(LocalPath, "../assets", "textures", "mic_unmute.png"))
 
-local Maid = _H:Require(_H.Path:Join(LocalPath, "lib"),"Maid.lua")
+local Maid = _H:Require(_H.Path:Join(_R.Directory,"Data","Modules"),"Maid.lua")
 
 local uiHandler = _H:Require(_H.Path:Join(LocalPath),"uiHandler.lua")
 
@@ -7007,172 +7165,7 @@ function VrcMute:Destroy()
 	self._maid:Destroy()
 end
 
-return VrcMute---	Manages the cleaning of events and other things.
--- Useful for encapsulating state and make deconstructors easy
--- @classmod Maid
--- @see Signal
-
-local FN_NONE = function() end
-
-local Maid = {}
-Maid.ClassName = "Maid"
-
---- Returns a new Maid object
--- @constructor Maid.new()
--- @treturn Maid
-function Maid.new()--: Maid
-	return setmetatable({
-		_tasks = {}
-	}, Maid)-- :: any
-end
-
-function Maid.isMaid(value)
-	return type(value) == "table" and value.ClassName == "Maid"
-end
-
---- Returns Maid[key] if not part of Maid metatable
--- @return Maid[key] value
-function Maid:__index(index)
-	if Maid[index] then
-		return Maid[index]
-	else
-		return self._tasks[index]
-	end
-end
-
---- Add a task to clean up. Tasks given to a maid will be cleaned when
---  maid[index] is set to a different value.
--- @usage
--- Maid[key] = (function)         Adds a task to perform
--- Maid[key] = (event connection) Manages an event connection
--- Maid[key] = (Maid)             Maids can act as an event connection, allowing a Maid to have other maids to clean up.
--- Maid[key] = (Object)           Maids can cleanup objects with a `Destroy` method
--- Maid[key] = nil                Removes a named task. If the task is an event, it is disconnected. If it is an object,
---                                it is destroyed.
-function Maid:__newindex(index, newTask)
-	if Maid[index] ~= nil then
-		error(("'%s' is reserved"):format(tostring(index)), 2)
-	end
-
-	local tasks = self._tasks
-	local oldTask = tasks[index]
-
-	if oldTask == newTask then
-		return
-	end
-
-	tasks[index] = newTask
-
-	if oldTask then
-		if type(oldTask) == "function" then
-			oldTask()
-		elseif typeof(oldTask) == "RBXScriptConnection" then
-			oldTask:Disconnect()
-		elseif oldTask.Destroy then
-			xpcall(function()
-				if oldTask.Cancel then
-					oldTask:Cancel()
-				end
-			end, FN_NONE)
-
-			oldTask:Destroy()
-		end
-	end
-end
-
---- Same as indexing, but uses an incremented number as a key.
--- @param task An item to clean
--- @treturn number taskId
-function Maid:GiveTask(task)
-	if not task then
-		error("Task cannot be false or nil", 2)
-	end
-
-	local taskId = #self._tasks+1
-	self[taskId] = task
-
-	if type(task) == "table" and (not task.Destroy) then
-		warn("[Maid.GiveTask] - Gave table task without .Destroy\n\n" .. debug.traceback())
-	end
-
-	-- prevent new tasks from being added after we clean - hexa
-
-	if self._cleaned then
-		self:DoCleaning()
-	end
-
-	return task
-end
-
-function Maid:GivePromise(promise)
-	if not promise:IsPending() then
-		return promise
-	end
-
-	local newPromise = promise.resolved(promise)
-	local id = self:GiveTask(newPromise)
-
-	-- Ensure GC
-	newPromise:Finally(function()
-		self[id] = nil
-	end)
-
-	return newPromise
-end
-
---- Cleans up all tasks.
--- @alias Destroy
-function Maid:DoCleaning()
-	self._cleaned = true
-	
-	local tasks = self._tasks
-
-	-- Disconnect all events first as we know this is safe
-	for index, task in pairs(tasks) do
-		if typeof(task) == "RBXScriptConnection" then
-			tasks[index] = nil
-			task:Disconnect()
-		end
-	end
-
-	-- Clear out tasks table completely, even if clean up tasks add more tasks to the maid
-	local index, task = next(tasks)
-	while task ~= nil do
-		tasks[index] = nil
-		xpcall(function()
-			if type(task) == "function" then
-				task()
-			elseif typeof(task) == "RBXScriptConnection" then
-				task:Disconnect()
-			elseif task.Destroy then
-				xpcall(function()
-					if task.Cancel then
-						task:Cancel()
-					end
-				end, FN_NONE)
-				
-				task:Destroy()
-			end
-		end, function()
-			
-		end)
-		index, task = next(tasks)
-	end
-end
-
---- Alias for DoCleaning()
--- @function Destroy
-Maid.Destroy = Maid.DoCleaning
-
--- export type Maid = {
--- 	GiveTask: (self: Maid, task: (() -> any?) | {[any]: any} | Instance | RBXScriptConnection) -> number;
--- 	GivePromise: (self: Maid, promise: any) -> any;
--- 	Destroy: (self: Maid) -> nil;
--- 	DoCleaning: (self: Maid) -> nil;
--- 	new: () -> Maid;
--- }
-
-return Maidlocal Args = { ... }
+return VrcMutelocal Args = { ... }
 local LocalPath = Args[1]
 
 local TweenService = game:GetService("TweenService") 
@@ -7192,7 +7185,7 @@ local MUTE_TWEEN_IN_INFO = TweenInfo.new(
 	0.1
 )
 
-local Maid = _H:Require(_H.Path:Join(LocalPath, "lib"),"Maid.lua")
+local Maid = _H:Require(_H.Path:Join(_R.Directory,"Data","Modules"),"Maid.lua")
 
 local tweenHandler = {}
 tweenHandler.__index = tweenHandler
@@ -7247,7 +7240,7 @@ local UNMUTE_ICON = _H.Asset:Get(_H.Path:Join(LocalPath, "../assets", "textures"
 local MUTE_SOUND = _H.Asset:Get(_H.Path:Join(LocalPath, "../assets", "sound", "mic_mute.ogg"))
 local UNMUTE_SOUND = _H.Asset:Get(_H.Path:Join(LocalPath, "../assets", "sound", "mic_unmute.ogg"))
 
-local Maid = _H:Require(_H.Path:Join(LocalPath, "lib"),"Maid.lua")
+local Maid = _H:Require(_H.Path:Join(_R.Directory,"Data","Modules"),"Maid.lua")
 
 local tweenHandler = _H:Require(_H.Path:Join(LocalPath), "tweenHandler.lua")
 
@@ -7271,6 +7264,7 @@ function uiHandler.new(muted)
 	self.muteIcon.Size = UDim2.new(0.04, 0, 0.08, 0)
 	self.muteIcon.AnchorPoint = Vector2.new(0.5, 1)
 	self.muteIcon.BackgroundTransparency = 1
+	self.muteIcon.ImageTransparency = 0.5
 	
 	if muted then
 		self.muteIcon.Image = MUTE_ICON
